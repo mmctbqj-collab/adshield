@@ -66,8 +66,9 @@ object TunBuilderFactory {
 
         val targets = dnsTargets(service)
         for (address in targets) {
-            runCatching { builder.addRoute(address.hostAddress ?: continue, 32) }
-                .onFailure { Log.w(TAG, "addRoute ${address.hostAddress} failed") }
+            val host = address.hostAddress ?: continue
+            runCatching { builder.addRoute(host, 32) }
+                .onFailure { Log.w(TAG, "addRoute $host failed") }
         }
         Log.i(TAG, "routes = ${targets.joinToString { it.hostAddress ?: "?" }}")
         return builder
