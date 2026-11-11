@@ -61,7 +61,7 @@ class StatsRepository(
     val liveTick: StateFlow<Long> = _liveTick
 
     @Volatile
-    private var currentDay: String = today()
+    private var currentDay: String = dayOf(System.currentTimeMillis())
 
     init {
         scope.launch {
