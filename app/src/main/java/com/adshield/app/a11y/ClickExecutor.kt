@@ -22,14 +22,16 @@ class ClickExecutor(private val service: AccessibilityService) {
         if (clicked) return Method.CLICK
 
         // 广告按钮常见结构：外层容器可点击，内层 TextView 不可点击
-        var parent = runCatching { node.parent }.getOrNull()
+        var current = runCatching { node.parent }.getOrNull()
         var depth = 0
-        while (parent != null && depth < MAX_ANCESTOR_DEPTH) {
+        while (current != null && depth < MAX_ANCESTOR_DEPTH) {
+            // 用 val 副本消除"可空 var 在 lambda 中被捕获"导致的智能转换失败
+            val candidate = current
             val ok = runCatching {
-                parent.isClickable && parent.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                candidate.isClickable && candidate.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             }.getOrDefault(false)
             if (ok) return Method.ANCESTOR_CLICK
-            parent = runCatching { parent.parent }.getOrNull()
+            current = runCatching { candidate.parent }.getOrNull()
             depth++
         }
 
