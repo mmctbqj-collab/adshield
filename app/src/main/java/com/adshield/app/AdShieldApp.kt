@@ -3,6 +3,8 @@ package com.adshield.app
 import android.app.Application
 import android.content.Context
 import com.adshield.app.data.AppDatabase
+import com.adshield.app.data.PopupDatabase
+import com.adshield.app.data.PopupRepository
 import com.adshield.app.data.SettingsStore
 import com.adshield.app.data.StatsRepository
 import com.adshield.app.rules.RuleRepository
@@ -27,6 +29,10 @@ class AppContainer(context: Context) {
     private val database: AppDatabase = AppDatabase.get(appContext)
 
     val stats: StatsRepository = StatsRepository(database.blockEventDao(), appScope)
+
+    private val popupDatabase: PopupDatabase = PopupDatabase.get(appContext)
+
+    val popups: PopupRepository = PopupRepository(popupDatabase.popupEventDao(), appScope)
 
     val rules: RuleRepository = RuleRepository(settings, appScope)
 

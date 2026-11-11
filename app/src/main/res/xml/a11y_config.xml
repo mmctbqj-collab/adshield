@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  无障碍服务配置。
+
+  要点：
+  - flagIncludeNotImportantViews：广告"跳过"按钮常被标记为 unimportant，不开启取不到；
+  - flagReportViewIds：需要 viewId 做精确定向规则；
+  - notificationTimeout=80：合并 CONTENT_CHANGED 洪水，避免高频遍历拖慢目标 App；
+  - canPerformGestures：ACTION_CLICK 失败时用手势兜底；
+  - isAccessibilityTool=false：本服务不是残障辅助工具，必须如实声明。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/a11y_description"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="80"
+    android:settingsActivity="com.adshield.app.ui.MainActivity" />

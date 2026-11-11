@@ -7,4 +7,7 @@
     <string name="noti_action_stop">停止</string>
     <string name="vpn_starting">正在启用过滤…</string>
     <string name="vpn_failed">过滤服务启动失败：%1$s</string>
+
+    <string name="a11y_label">AdShield 界面跳过</string>
+    <string name="a11y_description">识别开屏与弹窗广告中的“跳过 / 关闭”控件并自动点击。仅在你打开的应用处于前台的 8 秒内工作，且永不点击支付、开通、同意、下载类按钮。</string>
 </resources>

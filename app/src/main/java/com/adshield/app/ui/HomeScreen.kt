@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.adshield.app.data.db.BlockEventEntity
 import com.adshield.app.data.db.DomainAgg
 import com.adshield.app.data.db.PackageAgg
+import com.adshield.app.data.db.PopupEventEntity
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.ZoneId
@@ -46,6 +47,7 @@ fun HomeScreen(
     onToggleBlockDoh: (Boolean) -> Unit,
     onAddAllowDomain: (String) -> Unit,
     onRemoveAllowDomain: (String) -> Unit,
+    onOpenA11ySettings: () -> Unit,
     onDismissError: () -> Unit,
     onClearMessage: () -> Unit,
 ) {
@@ -77,7 +79,7 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        StatusCard(state = state, onToggle = onToggleVpn)
+        StatusCard(state = state, onToggle = onToggleVpn, onOpenA11ySettings = onOpenA11ySettings)
 
         state.error?.let { error ->
             NoticeCard(
@@ -101,6 +103,7 @@ fun HomeScreen(
         StatsCard(state = state)
         DomainRankCard(state = state)
         PackageRankCard(state = state)
+        RecentPopupCard(state = state)
         RecentCard(state = state)
         DohCard(state = state, onToggle = onToggleBlockDoh)
         CustomRuleCard(
@@ -144,30 +147,61 @@ fun HomeScreen(
 }
 
 @Composable
-private fun StatusCard(state: HomeUiState, onToggle: (Boolean) -> Unit) {
+private fun StatusCard(
+    state: HomeUiState,
+    onToggle: (Boolean) -> Unit,
+    onOpenA11ySettings: () -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (state.vpnRunning) "请求拦截已开启" else "请求拦截未开启",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (state.vpnRunning) {
-                        "所有 App 的 DNS 查询都会经过本机规则过滤"
-                    } else {
-                        "开启需授予 VPN 权限；数据不出本机，不转发到服务器"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (state.vpnRunning) "请求拦截已开启" else "请求拦截未开启",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (state.vpnRunning) {
+                            "所有 App 的 DNS 查询都会经过本机规则过滤"
+                        } else {
+                            "开启需授予 VPN 权限；数据不出本机，不转发到服务器"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(checked = state.vpnRunning, onCheckedChange = onToggle)
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Switch(checked = state.vpnRunning, onCheckedChange = onToggle)
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (state.a11yEnabled) "界面跳过已开启" else "界面跳过未开启",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "自动点击开屏/弹窗里的“跳过、关闭广告”。仅在 App 前台 8 秒内动作，" +
+                            "且永不点击支付、开通、同意、下载类按钮。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                if (state.a11yEnabled) {
+                    Text(
+                        text = "已开启",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    TextButton(onClick = onOpenA11ySettings) { Text("去开启") }
+                }
+            }
         }
     }
 }
@@ -223,6 +257,12 @@ private fun StatsCard(state: HomeUiState) {
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "自动跳过 ${state.todaySkipped} 次界面广告",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "规则 ${state.ruleCount} 条 · 自定义 ${state.customCount} 条",
                 style = MaterialTheme.typography.bodySmall,
@@ -313,6 +353,60 @@ private fun PackageRow(item: PackageAgg, labels: Map<String, String>) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+@Composable
+private fun RecentPopupCard(state: HomeUiState) {
+    val items = state.popupSnapshot?.recent.orEmpty().take(10)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SectionTitle("最近跳过")
+            if (items.isEmpty()) {
+                EmptyHint("暂无记录。开启“界面跳过”后，被自动关掉的广告会出现在这里。")
+            } else {
+                items.forEach { item -> PopupRow(item, state.appLabels) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PopupRow(item: PopupEventEntity, labels: Map<String, String>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = labels[item.pkg] ?: item.pkg,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+            )
+            Text(
+                text = buildString {
+                    append(formatTime(item.ts))
+                    append(" · ")
+                    append(outcomeLabel(item.outcome))
+                    item.nodeText?.let {
+                        append(" · ")
+                        append(it)
+                    }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+private fun outcomeLabel(outcome: String): String = when (outcome) {
+    "SKIPPED" -> "已跳过"
+    "FAILED" -> "已点击未生效"
+    "SAFETY_BLOCKED" -> "安全阀拦下"
+    else -> outcome
 }
 
 @Composable

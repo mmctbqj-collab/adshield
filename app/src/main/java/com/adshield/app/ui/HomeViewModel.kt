@@ -5,7 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.adshield.app.a11y.A11yState
 import com.adshield.app.appContainer
+import com.adshield.app.data.PopupRepository
 import com.adshield.app.data.StatsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -25,6 +27,9 @@ data class HomeUiState(
     val customDomains: List<String> = emptyList(),
     val allowDomains: List<String> = emptyList(),
     val snapshot: StatsRepository.Snapshot? = null,
+    val popupSnapshot: PopupRepository.Snapshot? = null,
+    val a11yEnabled: Boolean = false,
+    val todaySkipped: Long = 0L,
     val appLabels: Map<String, String> = emptyMap(),
     val error: String? = null,
     val message: String? = null,
@@ -65,6 +70,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            A11yState.enabled.collect { enabled ->
+                _state.update { it.copy(a11yEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            container.popups.todaySkipped.collect { skipped ->
+                _state.update { it.copy(todaySkipped = skipped) }
+            }
+        }
+        viewModelScope.launch {
             while (isActive) {
                 refresh()
                 delay(REFRESH_INTERVAL_MS)
@@ -74,6 +89,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private data class RefreshPayload(
         val snapshot: StatsRepository.Snapshot?,
+        val popup: PopupRepository.Snapshot?,
         val labels: Map<String, String>,
         val custom: List<String>,
         val allow: List<String>,
@@ -82,9 +98,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun refresh() {
         val payload = withContext(Dispatchers.IO) {
             val snap = runCatching { container.stats.snapshot() }.getOrNull()
+            val popup = runCatching { container.popups.snapshot() }.getOrNull()
+            val packages = ArrayList<String>(16)
+            snap?.topPackages?.forEach { packages.add(it.pkg) }
+            popup?.topPackages?.forEach { packages.add(it.pkg) }
+            popup?.recent?.forEach { packages.add(it.pkg) }
             RefreshPayload(
                 snapshot = snap,
-                labels = resolveLabels(snap?.topPackages?.map { it.pkg }.orEmpty()),
+                popup = popup,
+                labels = resolveLabels(packages.distinct()),
                 custom = container.rules.customDomains(),
                 allow = container.rules.allowDomains(),
             )
@@ -92,6 +114,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _state.update {
             it.copy(
                 snapshot = payload.snapshot,
+                popupSnapshot = payload.popup,
                 customDomains = payload.custom,
                 allowDomains = payload.allow,
                 appLabels = payload.labels,
