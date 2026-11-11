@@ -1,0 +1,4 @@
+# Room schema 导出目录占位文件。
+# 构建时 Room/KSP 会把 schema JSON 写入本目录（adshield.db/1.json），
+# 该 JSON 需要随代码一起提交，便于后续数据库迁移评审。
+# 不要删除本文件：Git 不跟踪空目录，CI 上缺少本目录会导致 schema 导出路径异常。
