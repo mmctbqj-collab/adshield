@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AdShield</string>
+    <string name="noti_channel_name">本地过滤服务</string>
+    <string name="noti_channel_desc">保持广告域名拦截在后台运行</string>
+    <string name="noti_title">广告域名拦截运行中</string>
+    <string name="noti_action_stop">停止</string>
+    <string name="vpn_starting">正在启用过滤…</string>
+    <string name="vpn_failed">过滤服务启动失败：%1$s</string>
+</resources>

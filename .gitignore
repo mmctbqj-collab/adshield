@@ -1,0 +1,15 @@
+# .gitignore（Android / Gradle）
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Room schema 需要入库，别忽略 app/schemas
+!app/schemas/
